@@ -1,0 +1,37 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "FastAPI service for GP"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.18.3",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.128.0",
+    "fastapi-users[sqlalchemy]>=15.0.3",
+    "googlemaps>=4.10.0",
+    "numpy>=2.4.1",
+    "pandas>=3.0.0",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg2-binary>=2.9.11",
+    "python-dotenv>=1.2.1",
+    "sqlalchemy>=2.0.45",
+    "uvicorn[standard]>=0.40.0",  # Added [standard] for better performance
+    "black>=23.11.0",  # For formatting migrations
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "httpx>=0.25.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Optional: Add tool configurations
+[tool.black]
+line-length = 88
+target-version = ['py312']
