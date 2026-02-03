@@ -33,8 +33,10 @@ import os
 load_dotenv()
 
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://joo:password@localhost/gp_db"
+)
 engine = create_async_engine(
     DATABASE_URL,
     echo=True,
@@ -83,7 +85,6 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     avg_rating = Column(Float)
     is_available = Column(Boolean, server_default="false")
     review_count = Column(Integer)
-    test_column = Column(String)
     # Relationships
     service_requests = relationship(
         "ServiceRequest",

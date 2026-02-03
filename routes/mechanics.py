@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies.helper import SkillName, swagger_responses
 from dependencies.permissions import require_admin, require_mechanic
-from db.schemas import MechanicAdminUpdate, MechanicRead, MechanicSkillCreate, MechanicUpdate
-from db.models import MechanicSkill, Skill, get_async_session , User 
+from app.db.schemas import MechanicAdminUpdate, MechanicRead, MechanicSkillCreate, MechanicUpdate
+from app.db.models import MechanicSkill, Skill, get_async_session , User 
 import uuid
 
 

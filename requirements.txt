@@ -1,0 +1,14 @@
+aiosqlite>=0.22.1
+alembic>=1.18.3
+asyncpg>=0.31.0
+fastapi>=0.128.0
+fastapi-users[sqlalchemy]>=15.0.3
+googlemaps>=4.10.0
+numpy>=2.4.1
+pandas>=3.0.0
+passlib[bcrypt]>=1.7.4
+psycopg2-binary>=2.9.11
+python-dotenv>=1.2.1
+sqlalchemy>=2.0.45
+uvicorn[standard]>=0.40.0
+black>=23.11.0

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.schemas import SkillName
+from app.db.schemas import SkillName
 from dependencies.helper import Status, swagger_responses
 from dependencies.permissions import require_admin, require_mechanic, require_user
-from db.models import  MechanicSkill, Skill, get_async_session , User ,  ServiceRequest 
+from app.db.models import  MechanicSkill, Skill, get_async_session , User ,  ServiceRequest 
 from datetime import datetime
 
 

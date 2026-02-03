@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import RecommendationWeights
+from app.db.models import RecommendationWeights
 # from app.db.recommendation_weights import RecommendationWeights
 
 

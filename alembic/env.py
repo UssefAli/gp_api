@@ -10,9 +10,16 @@ from alembic import context
 
 # Add your project directory to Python path
 # sys.path.append(str(Path(__file__).parent.parent))
+import sys
+import os
+from logging.config import fileConfig
+from sqlalchemy import engine_from_config, pool
+from alembic import context
 
+# add project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Import your Base
-from db.models import Base  # Adjust if your models are in different file
+from app.db.models import Base  # Adjust if your models are in different file
 
 # this is the Alembic Config object
 config = context.config
@@ -21,6 +28,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+DATABASE_URL = os.getenv("DATABASE_URL_ASYNC")
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 # Set target metadata
 target_metadata = Base.metadata
 

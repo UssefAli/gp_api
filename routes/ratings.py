@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.models import Rating, ServiceRequest, User, get_async_session
-from db.schemas import RatingCreate
+from app.db.models import Rating, ServiceRequest, User, get_async_session
+from app.db.schemas import RatingCreate
 from dependencies.helper import Status, swagger_responses
 from dependencies.permissions import require_admin, require_user
 from services.weights import update_weights

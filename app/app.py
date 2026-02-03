@@ -1,6 +1,6 @@
 from fastapi import FastAPI 
-from db.schemas import AdminCreate, AdminRead, MechanicCreate, MechanicRead, UserCreate , UserRead 
-from db.models import create_db_and_tables 
+from app.db.schemas import AdminCreate, AdminRead, MechanicCreate, MechanicRead, UserCreate , UserRead 
+from app.db.models import create_db_and_tables 
 from contextlib import asynccontextmanager
 from core.auth import auth_backend , fastapi_users
 from routes import admin , mechanics , users , requests , ratings
@@ -18,13 +18,13 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],  
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 

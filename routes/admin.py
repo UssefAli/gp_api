@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.schemas import MechanicAdminUpdate, SkillCreate, UserUpdate
+from app.db.schemas import MechanicAdminUpdate, SkillCreate, UserUpdate
 from dependencies.helper import Status, swagger_responses
 from dependencies.permissions import require_admin
-from db.models import Rating, Skill, get_async_session , User , ServiceRequest 
+from app.db.models import Rating, Skill, get_async_session , User , ServiceRequest 
 import uuid
 
 router = APIRouter(

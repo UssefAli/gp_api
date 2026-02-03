@@ -3,8 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies.helper import swagger_responses
 from dependencies.permissions import require_admin,require_user
-from db.schemas import RatingCreate, UserUpdate 
-from db.models import Rating, get_async_session , User 
+from app.db.schemas import RatingCreate, UserUpdate 
+from app.db.models import Rating, get_async_session , User 
 import uuid
 
 

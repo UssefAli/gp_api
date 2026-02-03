@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException
 from core.auth import current_active_user
-from db.models import User
+from app.db.models import User
 import uuid
 
 async def require_user(user: User = Depends(current_active_user)):

@@ -17,21 +17,7 @@ dependencies = [
     "psycopg2-binary>=2.9.11",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.45",
-    "uvicorn[standard]>=0.40.0",  # Added [standard] for better performance
-    "black>=23.11.0",  # For formatting migrations
+    "uvicorn[standard]>=0.40.0",  
+    "black>=23.11.0",  
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "httpx>=0.25.0",
-]
-
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-# Optional: Add tool configurations
-[tool.black]
-line-length = 88
-target-version = ['py312']
