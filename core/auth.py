@@ -17,7 +17,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
-        print(f"User {user.id} has registered.")
+        token = await self.request_verify(user, request)
+        print(f"Verification token for {user.email}: {token}")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
@@ -28,6 +29,10 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         self, user: User, token: str, request: Optional[Request] = None
     ):
         print(f"Verification requested for user {user.id}. Token: {token}")
+    async def get(self, id: uuid.UUID):
+        user = await super().get(id)
+        print(f"Fetched user: {user}")
+        return user
 
 
 async def get_user_manager(

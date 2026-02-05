@@ -20,6 +20,7 @@ class UserRead(schemas.BaseUser[uuid.UUID]):
 
 
 
+
 class MechanicRead(schemas.BaseUser[uuid.UUID]):
     role: str
     name: Optional[str]

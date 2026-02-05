@@ -53,7 +53,7 @@ async def get_current_user(session : AsyncSession = Depends(get_async_session) ,
                 "phone" : cur_user.phone,
                 "car model" : cur_user.car_model,
                 "car type" : cur_user.car_type,
-                "Canceled count" : user.canceled_count
+                "Canceled count" : cur_user.canceled_count
         }     
         return {"user" : user}
     except Exception as e:
