@@ -18,21 +18,26 @@ async def require_admin(user: User = Depends(current_active_user)):
         raise HTTPException(status_code=403, detail="Admin access required")  
     return user
 
-# def admin_or_owner(user_id_param: str = "user_id"):
-#     async def checker(
-#         user_id: uuid.UUID,
-#         current_user: User = Depends(current_active_user),
-#     ):
-#         if current_user.is_superuser:
-#             return current_user
+async def require_mechanic_or_user(user: User = Depends(current_active_user)):
+    if user.role not in ("mechanic" , "user"):
+        raise HTTPException(status_code=403, detail="Access required")
+    return user
 
-#         if current_user.id != user_id:
-#             raise HTTPException(
-#                 status_code=403,
-#                 detail="Not enough permissions",
-#             )
+def admin_or_owner(user_id_param: str = "user_id"):
+    async def checker(
+        user_id: uuid.UUID,
+        current_user: User = Depends(current_active_user),
+    ):
+        if current_user.is_superuser:
+            return current_user
 
-#         return current_user
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Not enough permissions",
+            )
 
-#     return checker
+        return current_user
+
+    return checker
 
