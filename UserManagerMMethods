@@ -1,0 +1,411 @@
+# app/users.py
+from typing import Optional, Dict, Any
+import uuid
+from fastapi import Request, Depends
+from fastapi_users import BaseUserManager, UUIDIDMixin, InvalidPasswordException, models
+from fastapi_users.db import BaseUserDatabase
+from fastapi_users.password import PasswordHelper
+from pydantic import EmailStr
+from datetime import datetime, timedelta
+
+class UserManager(UUIDIDMixin, BaseUserManager[models.UP, uuid.UUID]):
+    """
+    Complete UserManager with all overrideable methods.
+    Copy and customize what you need.
+    """
+    
+    # ============================================
+    # 🔧 CONFIGURATION PROPERTIES (Override these)
+    # ============================================
+    
+    reset_password_token_secret: str = "CHANGE_THIS_SECRET"
+    reset_password_token_lifetime_seconds: int = 3600  # 1 hour
+    
+    verification_token_secret: str = "CHANGE_THIS_SECRET_TOO"
+    verification_token_lifetime_seconds: int = 3600  # 1 hour
+    
+    # ============================================
+    # 🔐 PASSWORD VALIDATION (Override these)
+    # ============================================
+    
+    async def validate_password(
+        self, 
+        password: str, 
+        user: models.UP  # models.UP is your User model type
+    ) -> None:
+        """
+        Validate password strength.
+        Raise InvalidPasswordException if invalid.
+        
+        Default checks:
+        - Minimum 3 characters
+        - Maximum 72 characters (bcrypt limit)
+        
+        Override to add custom rules.
+        """
+        if len(password) < 8:
+            raise InvalidPasswordException(
+                reason="Password should be at least 8 characters"
+            )
+        
+        if len(password) > 72:
+            raise InvalidPasswordException(
+                reason="Password should not exceed 72 characters"
+            )
+        
+        # Add custom validations:
+        if not any(char.isdigit() for char in password):
+            raise InvalidPasswordException(
+                reason="Password should contain at least one digit"
+            )
+        
+        if not any(char.isupper() for char in password):
+            raise InvalidPasswordException(
+                reason="Password should contain at least one uppercase letter"
+            )
+        
+        if not any(char.islower() for char in password):
+            raise InvalidPasswordException(
+                reason="Password should contain at least one lowercase letter"
+            )
+    
+    # ============================================
+    # ✉️ EMAIL/VALIDATION HOOKS (Override these)
+    # ============================================
+    
+    async def on_after_register(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after successful user registration.
+        
+        Use cases:
+        - Send welcome email
+        - Log registration
+        - Send to analytics
+        - Create user profile
+        """
+        print(f"✅ User {user.id} registered with email {user.email}")
+        
+        # Example: Send welcome email
+        # await self.send_welcome_email(user)
+    
+    async def on_after_forgot_password(
+        self, 
+        user: models.UP, 
+        token: str, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after forgot password request.
+        
+        Use cases:
+        - Send password reset email
+        - Log password reset request
+        - Notify security team
+        """
+        print(f"📧 Password reset requested for {user.email}")
+        print(f"🔑 Reset token: {token}")
+        
+        # Your email sending logic here
+        # await self.send_password_reset_email(user, token)
+    
+    async def on_after_reset_password(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after successful password reset.
+        
+        Use cases:
+        - Send confirmation email
+        - Log password change
+        - Invalidate old sessions
+        """
+        print(f"🔄 Password reset successful for {user.email}")
+        
+        # Example: Send confirmation email
+        # await self.send_password_changed_email(user)
+    
+    async def on_after_request_verify(
+        self, 
+        user: models.UP, 
+        token: str, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after verification request.
+        
+        Use cases:
+        - Send verification email
+        - Log verification request
+        """
+        print(f"📨 Verification requested for {user.email}")
+        print(f"🔑 Verification token: {token}")
+        
+        # Your email sending logic here
+        # await self.send_verification_email(user, token)
+    
+    async def on_after_verify(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after successful verification.
+        
+        Use cases:
+        - Send welcome email (if not sent on register)
+        - Update user status
+        - Grant additional permissions
+        """
+        print(f"✅ Email verified for {user.email}")
+        
+        # Example: Send welcome email after verification
+        # if not user.is_verified:
+        #     await self.send_welcome_email(user)
+    
+    async def on_after_update(
+        self, 
+        user: models.UP, 
+        update_dict: Dict[str, Any], 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after user update.
+        
+        Use cases:
+        - Send profile update confirmation
+        - Log changes
+        - Sync with external systems
+        """
+        print(f"📝 User {user.email} updated")
+        print(f"   Changes: {update_dict}")
+    
+    # ============================================
+    # 🔑 AUTHENTICATION HOOKS (Override these)
+    # ============================================
+    
+    async def on_after_login(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None,
+        response: Optional[Any] = None
+    ) -> None:
+        """
+        Called after successful login.
+        
+        Use cases:
+        - Log login activity
+        - Update last_login timestamp
+        - Send login notification
+        """
+        print(f"🔓 User {user.email} logged in")
+        
+        # Example: Update last_login
+        # user.last_login = datetime.utcnow()
+        # await self.user_db.update(user)
+    
+    async def on_before_delete(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called before user deletion.
+        
+        Use cases:
+        - Backup user data
+        - Send goodbye email
+        - Log deletion
+        """
+        print(f"🗑️  Deleting user {user.email}")
+        
+        # Example: Send goodbye email
+        # await self.send_goodbye_email(user)
+    
+    async def on_after_delete(
+        self, 
+        user: models.UP, 
+        request: Optional[Request] = None
+    ) -> None:
+        """
+        Called after user deletion.
+        
+        Use cases:
+        - Log successful deletion
+        - Clean up related data
+        - Notify admin
+        """
+        print(f"✅ User {user.email} deleted")
+    
+    # ============================================
+    # 🎯 USER CREATION/CUSTOMIZATION (Override these)
+    # ============================================
+    
+    async def create(
+        self, 
+        user_create: models.UC,  # models.UC is your UserCreate model type
+        safe: bool = False,
+        request: Optional[Request] = None
+    ) -> models.UP:
+        """
+        Create a new user with custom logic.
+        
+        Override to:
+        - Add default values
+        - Validate business rules
+        - Create related records
+        """
+        # Call parent to do the actual creation
+        user = await super().create(user_create, safe, request)
+        
+        # Custom logic after creation
+        print(f"👤 Created user with ID: {user.id}")
+        
+        # Example: Create user profile
+        # await self.create_user_profile(user)
+        
+        return user
+    
+    async def oauth_callback(
+        self,
+        oauth_name: str,
+        access_token: str,
+        account_id: str,
+        account_email: str,
+        expires_at: Optional[int] = None,
+        refresh_token: Optional[str] = None,
+        request: Optional[Request] = None,
+        *,
+        associate_by_email: bool = False,
+        is_verified_by_default: bool = False,
+    ) -> models.UP:
+        """
+        Handle OAuth callback.
+        
+        Override to:
+        - Custom OAuth user creation
+        - Link with existing accounts
+        - Set custom fields
+        """
+        user = await super().oauth_callback(
+            oauth_name=oauth_name,
+            access_token=access_token,
+            account_id=account_id,
+            account_email=account_email,
+            expires_at=expires_at,
+            refresh_token=refresh_token,
+            request=request,
+            associate_by_email=associate_by_email,
+            is_verified_by_default=is_verified_by_default,
+        )
+        
+        print(f"🔗 OAuth login: {oauth_name} -> {user.email}")
+        return user
+    
+    # ============================================
+    # 🔍 CUSTOM USER QUERIES (Add your own methods)
+    # ============================================
+    
+    async def get_by_email(self, email: EmailStr) -> Optional[models.UP]:
+        """Get user by email (convenience method)"""
+        return await self.user_db.get_by_email(email)
+    
+    async def get_active_users(self) -> List[models.UP]:
+        """Get all active users"""
+        # You need to implement this based on your DB
+        # This is just an example
+        pass
+    
+    async def update_last_login(self, user: models.UP) -> None:
+        """Update user's last login timestamp"""
+        # Example implementation
+        user.last_login = datetime.utcnow()
+        await self.user_db.update(user)
+    
+    # ============================================
+    # ✉️ EMAIL METHODS (Add your own)
+    # ============================================
+    
+    async def send_welcome_email(self, user: models.UP) -> None:
+        """Send welcome email to new user"""
+        # Your email sending logic
+        print(f"📧 Sending welcome email to {user.email}")
+        # await email_service.send_welcome(user.email, user.name)
+    
+    async def send_password_reset_email(self, user: models.UP, token: str) -> None:
+        """Send password reset email"""
+        reset_url = f"https://yourapp.com/reset-password?token={token}"
+        
+        print(f"📧 Sending password reset to {user.email}")
+        print(f"🔗 Reset URL: {reset_url}")
+        
+        # Your email sending logic with Resend
+        # await resend_service.send_password_reset(user.email, token)
+    
+    async def send_verification_email(self, user: models.UP, token: str) -> None:
+        """Send email verification email"""
+        verify_url = f"https://yourapp.com/verify-email?token={token}"
+        
+        print(f"📧 Sending verification email to {user.email}")
+        print(f"🔗 Verify URL: {verify_url}")
+    
+    # ============================================
+    # 🛡️ SECURITY METHODS (Add your own)
+    # ============================================
+    
+    async def check_password_strength(self, password: str) -> Dict[str, Any]:
+        """Check password strength and return details"""
+        score = 0
+        feedback = []
+        
+        if len(password) >= 8:
+            score += 1
+        else:
+            feedback.append("Should be at least 8 characters")
+        
+        if any(char.isdigit() for char in password):
+            score += 1
+        else:
+            feedback.append("Add at least one number")
+        
+        if any(char.isupper() for char in password):
+            score += 1
+        else:
+            feedback.append("Add at least one uppercase letter")
+        
+        if any(char.islower() for char in password):
+            score += 1
+        else:
+            feedback.append("Add at least one lowercase letter")
+        
+        if any(char in "!@#$%^&*()" for char in password):
+            score += 1
+        else:
+            feedback.append("Add at least one special character")
+        
+        return {
+            "score": score,  # 0-5
+            "strength": ["Very Weak", "Weak", "Fair", "Good", "Strong", "Very Strong"][score],
+            "feedback": feedback,
+            "is_acceptable": score >= 3
+        }
+    
+    async def is_email_taken(self, email: EmailStr) -> bool:
+        """Check if email is already registered"""
+        user = await self.user_db.get_by_email(email)
+        return user is not None
+
+
+# ============================================
+# 🔄 GET USER MANAGER DEPENDENCY
+# ============================================
+
+async def get_user_manager(
+    user_db: BaseUserDatabase = Depends(get_user_db)  # Your get_user_db dependency
+):
+    yield UserManager(user_db)

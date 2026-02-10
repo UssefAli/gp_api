@@ -1,12 +1,17 @@
+import uuid
 from fastapi import FastAPI 
 from app.db.schemas import AdminCreate, AdminRead, MechanicCreate, MechanicRead, UserCreate , UserRead 
-from app.db.models import create_db_and_tables 
+from app.db.models import User, create_db_and_tables 
 from contextlib import asynccontextmanager
-from core.auth import auth_backend , fastapi_users
-from routes import admin , mechanics , users , requests , ratings
+from core.auth import auth_backend , fastapi_users, get_user_manager
+from routes import admin , mechanics, users , requests , ratings
 from fastapi.middleware.cors import CORSMiddleware
 
-
+import os
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi_users import BaseUserManager, FastAPIUsers
+import resend
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
 #     await create_db_and_tables()
@@ -26,7 +31,7 @@ app = FastAPI()
 #     allow_headers=["*"],
 # )
 
-
+app = FastAPI()
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),

@@ -17,7 +17,10 @@ dependencies = [
     "psycopg2-binary>=2.9.11",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.45",
-    "uvicorn[standard]>=0.40.0",  
-    "black>=23.11.0",  
+    "uvicorn[standard]>=0.40.0",
+    "black>=23.11.0",
+    "aiosmtplib>=5.1.0",
+    "httpx>=0.28.1",
+    "resend>=2.21.0",
 ]
 

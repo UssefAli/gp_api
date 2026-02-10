@@ -1,0 +1,205 @@
+# ============================================
+# 🐳 DOCKER COMPOSE COMMANDS
+# ============================================
+
+# Start all services in background
+docker-compose up -d
+
+# Start and rebuild images
+docker-compose up -d --build
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (WARNING: deletes data!)
+docker-compose down -v
+
+# View logs
+docker-compose logs
+docker-compose logs -f                    # Follow logs
+docker-compose logs app                   # App logs only
+docker-compose logs db                    # DB logs only
+
+# Restart specific service
+docker-compose restart app
+docker-compose restart db
+
+# Rebuild specific service
+docker-compose up -d --build app
+
+# Check service status
+docker-compose ps
+
+# Execute command in container
+docker-compose exec app <command>
+docker-compose exec db <command>
+
+
+# ============================================
+# 🗄️ DATABASE COMMANDS (PostgreSQL)
+# ============================================
+
+# Access PostgreSQL CLI
+docker-compose exec db psql -U postgres -d your_database
+
+# Backup database
+docker-compose exec db pg_dump -U postgres your_database > backup.sql
+
+# Restore database
+docker-compose exec -T db psql -U postgres your_database < backup.sql
+
+# Create new database
+docker-compose exec db createdb -U postgres new_database
+
+# Drop database (CAUTION!)
+docker-compose exec db dropdb -U postgres your_database
+
+# List all databases
+docker-compose exec db psql -U postgres -c "\l"
+
+
+# ============================================
+# 📦 ALEBIC MIGRATION COMMANDS
+# ============================================
+
+# Initialize alembic (first time only)
+docker-compose exec app alembic init alembic
+
+# Create new migration
+docker-compose exec app alembic revision --autogenerate -m "Migration description"
+
+# Apply all pending migrations
+docker-compose exec app alembic upgrade head
+
+# Rollback last migration
+docker-compose exec app alembic downgrade -1
+
+# Rollback to base
+docker-compose exec app alembic downgrade base
+
+# Check current migration
+docker-compose exec app alembic current
+
+# Show migration history
+docker-compose exec app alembic history
+
+# Show available heads
+docker-compose exec app alembic heads
+
+# Stamp to specific revision (mark as done without running)
+docker-compose exec app alembic stamp <revision_id>
+
+
+# ============================================
+# 🚀 DEVELOPMENT WORKFLOWS
+# ============================================
+
+# Start fresh development environment
+docker-compose down -v
+docker-compose up -d --build
+docker-compose exec app alembic upgrade head
+
+# After model changes
+docker-compose exec app alembic revision --autogenerate -m "Updated models"
+docker-compose exec app alembic upgrade head
+
+# Reset database only (keep containers)
+docker-compose exec db dropdb -U postgres your_database
+docker-compose exec db createdb -U postgres your_database
+docker-compose exec app alembic upgrade head
+
+
+# ============================================
+# 🔍 INSPECTION & DEBUGGING
+# ============================================
+
+# Enter container shell
+docker-compose exec app bash
+docker-compose exec db bash
+
+# Check database tables
+docker-compose exec db psql -U postgres -d your_database -c "\dt"
+
+# Check database size
+docker-compose exec db psql -U postgres -d your_database -c "SELECT pg_size_pretty(pg_database_size('your_database'));"
+
+# List largest tables
+docker-compose exec db psql -U postgres -d your_database -c "
+SELECT tablename, pg_size_pretty(pg_total_relation_size(tablename)) 
+FROM pg_tables 
+WHERE schemaname = 'public' 
+ORDER BY pg_total_relation_size(tablename) DESC;
+"
+
+# View running containers
+docker ps
+docker-compose ps
+
+# View resource usage
+docker stats
+
+# Remove unused data
+docker system prune
+
+
+# ============================================
+# 🐳 PURE DOCKER COMMANDS (if needed)
+# ============================================
+
+# List all containers
+docker ps -a
+
+# List all images
+docker images
+
+# Remove container
+docker rm <container_id>
+
+# Remove image
+docker rmi <image_id>
+
+# View container logs
+docker logs <container_id>
+docker logs -f <container_id>  # Follow
+
+# Copy files from container
+docker cp <container_id>:/path/in/container ./local/path
+
+# Build image
+docker build -t your_image_name .
+
+# Run container
+docker run -p 8000:8000 your_image_name
+
+
+# ============================================
+# ⚡ ONE-LINERS FOR COMMON TASKS
+# ============================================
+
+# Full restart with fresh DB
+docker-compose down -v && docker-compose up -d --build && sleep 5 && docker-compose exec app alembic upgrade head
+
+# Quick migration
+docker-compose exec app alembic revision --autogenerate -m "update" && docker-compose exec app alembic upgrade head
+
+# Check app health
+curl http://localhost:8000/docs
+
+# View app logs
+docker-compose logs app --tail=50 -f
+
+# Enter database with correct DB selected
+docker-compose exec db psql -U postgres -d your_database
+
+
+# ============================================
+# 🎯 QUICK REFERENCE
+# ============================================
+# Start:       docker-compose up -d
+# Stop:        docker-compose down
+# Migrate:     docker-compose exec app alembic upgrade head
+# Logs:        docker-compose logs -f app
+# DB Shell:    docker-compose exec db psql -U postgres -d your_database
+# App Shell:   docker-compose exec app bash
+# Rebuild:     docker-compose up -d --build
+# Reset DB:    docker-compose down -v && docker-compose up -d

@@ -9,13 +9,23 @@ from fastapi_users.authentication import (
 )
 from fastapi_users.db import SQLAlchemyUserDatabase
 from app.db.models import User, get_user_db
+from services.email import CustomEmailManager
+from dotenv import load_dotenv
+import os
 
-SECRET = "elbarody0099"
+load_dotenv()
+
+SECRET = os.getenv("SECRET")
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
-
+    reset_password_token_secret: str = SECRET
+    reset_password_token_lifetime_seconds: int = 3600
+    def __init__(self, user_db):
+        super().__init__(user_db)
+        self.email_manager = CustomEmailManager()
+        
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         token = await self.request_verify(user, request)
         print(f"Verification token for {user.email}: {token}")
@@ -23,17 +33,23 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"User {user.id} forgot password. Token: {token}")
 
-    async def on_after_request_verify(
-        self, user: User, token: str, request: Optional[Request] = None
-    ):
-        print(f"Verification requested for user {user.id}. Token: {token}")
-    async def get(self, id: uuid.UUID):
-        user = await super().get(id)
-        print(f"Fetched user: {user}")
-        return user
+        success = await self.email_manager.send_password_reset(user, token, self)
+        
+        if success:
+            print(f"✅ Password reset email sent to {user.email}")
+        else:
+            print(f"❌ Failed to send email")
 
+        print(f"\n🔑 DEBUG Token: {token}")   
+     
+    async def on_after_reset_password(
+        self, 
+        user: User, 
+        request: Optional[Request] = None
+    ) -> None:
+        
+        print(f"🔄 Password reset successful for {user.email}")
 
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
