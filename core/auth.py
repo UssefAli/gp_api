@@ -22,6 +22,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
     reset_password_token_secret: str = SECRET
     reset_password_token_lifetime_seconds: int = 3600
+
+
     def __init__(self, user_db):
         super().__init__(user_db)
         self.email_manager = CustomEmailManager()
@@ -50,6 +52,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ) -> None:
         
         print(f"🔄 Password reset successful for {user.email}")
+
 
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),

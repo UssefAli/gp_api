@@ -4,7 +4,7 @@ from app.db.schemas import AdminCreate, AdminRead, MechanicCreate, MechanicRead,
 from app.db.models import User, create_db_and_tables 
 from contextlib import asynccontextmanager
 from core.auth import auth_backend , fastapi_users, get_user_manager
-from routes import admin , mechanics, users , requests , ratings
+from routes import admin , mechanics, tracking, users , requests , ratings
 from fastapi.middleware.cors import CORSMiddleware
 
 import os
@@ -78,5 +78,6 @@ app.include_router(
 app.include_router(users.router)
 app.include_router(mechanics.router)
 app.include_router(requests.router)
+app.include_router(tracking.router)
 app.include_router(ratings.router)
 app.include_router(admin.router)

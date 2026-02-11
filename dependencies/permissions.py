@@ -1,11 +1,54 @@
-from fastapi import Depends, HTTPException
-from core.auth import current_active_user
-from app.db.models import User
+from fastapi import Depends, HTTPException, WebSocket
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+
+from core.auth import UserManager, current_active_user, get_jwt_strategy , fastapi_users, get_user_manager
+from app.db.models import User, get_async_session
 import uuid
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 async def require_user(user: User = Depends(current_active_user)):
     if user.role != "user":
         raise HTTPException(status_code=403, detail="User access required")
+    return user
+
+async def require_user_ws(
+    websocket: WebSocket, 
+    session: AsyncSession = Depends(get_async_session)
+) -> User:
+    """Authenticate WebSocket connection and return user"""
+    
+
+    auth_header = websocket.headers.get("authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        await websocket.close(code=1008, reason="Missing or invalid authorization header")
+        return None
+
+    token = auth_header.split(" ")[1]
+
+
+    jwt_strategy = get_jwt_strategy()
+    try:
+        payload = await jwt_strategy.read_token(token)
+        user_id = uuid.UUID(payload["sub"])
+    except Exception:
+        await websocket.close(code=1008, reason="Invalid token")
+        return None
+
+
+    user_db = SQLAlchemyUserDatabase(session, User)  # ✅ Create user_db with session
+    user_manager = UserManager(user_db)  # ✅ Instantiate UserManager directly with user_db
+    user = await user_manager.get(user_id)  # ✅ Use .get() not .get_user_by_id()
+
+
+    if not user:
+        await websocket.close(code=1008, reason="User not found")
+        return None
+    
+    if not user.is_active:
+        await websocket.close(code=1008, reason="User is inactive")
+        return None
+
     return user
 
 async def require_mechanic(user: User = Depends(current_active_user)):
@@ -23,21 +66,4 @@ async def require_mechanic_or_user(user: User = Depends(current_active_user)):
         raise HTTPException(status_code=403, detail="Access required")
     return user
 
-def admin_or_owner(user_id_param: str = "user_id"):
-    async def checker(
-        user_id: uuid.UUID,
-        current_user: User = Depends(current_active_user),
-    ):
-        if current_user.is_superuser:
-            return current_user
-
-        if current_user.id != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Not enough permissions",
-            )
-
-        return current_user
-
-    return checker
 

@@ -31,6 +31,7 @@ class Status(str , Enum):
     pending = "Pending"
     canceled_user = "Canceled by User"
     canceled_mechanic = "Canceled by Mechanic"
+    arrived = "Arrived"
 
 def swagger_responses(
     *,

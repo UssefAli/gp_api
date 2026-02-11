@@ -1,12 +1,16 @@
+from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Set
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from dependencies.helper import SkillName, swagger_responses
+from dependencies.helper import SkillName, Status, swagger_responses
 from dependencies.permissions import require_admin, require_mechanic
 from app.db.schemas import MechanicAdminUpdate, MechanicRead, MechanicSkillCreate, MechanicUpdate
-from app.db.models import MechanicSkill, Skill, get_async_session , User 
+from app.db.models import LocationTracking, MechanicSkill, ServiceRequest, Skill, get_async_session , User 
 import uuid
+from services.webscoket_manager import manager
+from services.distance import haversine_distance
 
 
 
@@ -129,9 +133,9 @@ async def update_current_mechanic(user_in : MechanicUpdate , session : AsyncSess
 
 
 @router.patch(
-    "/location/me",
+    "/workshop_location/me",
     status_code=200,
-    summary="Update mechanic workshop location",
+    summary="Set/Update mechanic workshop location",
     description="""
 Update the workshop location of the authenticated mechanic.
 
@@ -149,7 +153,7 @@ Used for nearby job matching.
         access_role="Mechanic",
     ),
 )
-async def update_mechanic_location(
+async def update_workshop_location(
     lat : float,
     lng : float,
     session : AsyncSession = Depends(get_async_session),
@@ -289,6 +293,120 @@ async def get_mechanic_skills(
 
 
 
+@router.patch(
+    "/mechanic/live_location/{request_id}",
+    status_code=200,
+    summary="Update mechanic live location",
+    description="""
+Update the authenticated mechanic's live GPS location 
+for their currently assigned service request.
+
+Location update rules:
+- Database is updated only if:
+    • Mechanic moved ≥ 10 meters
+    OR
+    • 30 seconds passed since last update
+- If mechanic is within arrival range of request location:
+    • Request status is automatically updated to ARRIVED
+    • WebSocket tracking is closed
+
+Used for:
+- Real-time tracking
+- Automatic arrival detection
+
+🔒 Mechanic authentication required
+    """,
+    responses=swagger_responses(
+        success_message={
+            "message": "Location processed",
+            "arrived": False
+        },
+        access_role="Mechanic"
+    ),
+)
+async def update_mechanic_location(
+    request_id: int,
+    lat: float,
+    lng: float,
+    db: AsyncSession = Depends(get_async_session),
+    cur_mechanic: User = Depends(require_mechanic)
+):
+
+    result = await db.execute(
+        select(ServiceRequest).where(
+            ServiceRequest.request_id == request_id
+        )
+    )
+    request = result.scalar_one_or_none()
+
+    if not request or request.mechanic_id != cur_mechanic.id:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if request.status != Status.accepted:
+        raise HTTPException(status_code=400, detail="Tracking not active")
+
+
+    result = await db.execute(
+        select(LocationTracking).where(
+            LocationTracking.request_id == request_id
+        )
+    )
+    tracking = result.scalar_one_or_none()
+
+    if not tracking:
+        raise HTTPException(status_code=404, detail="Tracking row not found")
+
+    distance = haversine_distance(
+        tracking.mechanic_lat,
+        tracking.mechanic_lng,
+        lat,
+        lng
+    )
+
+    time_passed = (datetime.now(timezone.utc) - tracking.timestamp).total_seconds()
+
+    if distance >= 10 or time_passed >= 30:
+        tracking.mechanic_lat = lat
+        tracking.mechanic_lng = lng
+        tracking.timestamp = datetime.now(timezone.utc)
+
+        await db.commit()
+        await db.refresh(tracking)
+
+    arrival_distance = haversine_distance(
+        request.user_lat,
+        request.user_lng,
+        lat,
+        lng,
+        km = False
+    )
+
+    arrived = False
+
+    if arrival_distance <= 25:
+        request.status = Status.arrived
+        await db.commit()
+        arrived = True
+
+    await manager.broadcast(
+        request_id,
+        {
+            "request_id": request_id,
+            "lat": lat,
+            "lng": lng,
+            "arrived" : arrived ,
+            "timestamp": datetime.now().isoformat()  
+        }
+    )
+    if arrived:
+        if request_id in manager.active_connections:
+            for connection in manager.active_connections[request_id]:
+                await connection.close()
+            del manager.active_connections[request_id]
+    
+    return {"message": "Location updated" , "arrived" : arrived}
+
+
 
 async def get_mechanic_skills(mechanic_id, session):
     result = await session.execute(select(MechanicSkill).where(MechanicSkill.mechanic_id == mechanic_id))
@@ -304,3 +422,4 @@ async def get_mechanic_skills(mechanic_id, session):
         skill1 = result.scalar_one_or_none()
         skills.append(skill1.skill_name)
     return skills
+

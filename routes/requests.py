@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.schemas import SkillName
 from dependencies.helper import Status, swagger_responses
 from dependencies.permissions import require_admin, require_mechanic, require_user
-from app.db.models import  MechanicSkill, Skill, get_async_session , User ,  ServiceRequest 
-from datetime import datetime
+from app.db.models import  LocationTracking, MechanicSkill, Skill, get_async_session , User ,  ServiceRequest 
+from datetime import datetime, timezone
 
 
 from routes.mechanics import get_mechanic_skills
@@ -203,7 +203,7 @@ async def get_user_request_details(
         result = await session.execute(
             select(ServiceRequest).where(
                 ServiceRequest.user_id == cur_user.id,
-                ServiceRequest.status.in_((Status.pending, Status.accepted))
+                ServiceRequest.status.in_((Status.pending, Status.accepted , Status.arrived))
             )
         )
         request = result.scalar_one_or_none()
@@ -262,7 +262,7 @@ async def user_cancel_request(
         result = await session.execute(
             select(ServiceRequest).where(
                 ServiceRequest.user_id == cur_user.id,
-                ServiceRequest.status.in_((Status.accepted, Status.pending))
+                ServiceRequest.status.in_((Status.accepted, Status.pending, Status.arrived))
             )
         )
         request = result.scalar_one_or_none()
@@ -617,7 +617,7 @@ async def get_mechanic_assigned_request_details(
         result = await session.execute(
             select(ServiceRequest).where(
                 ServiceRequest.mechanic_id == cur_mechanic.id,
-                ServiceRequest.status == Status.accepted,
+                ServiceRequest.status.in_([Status.accepted, Status.arrived]),
             )
         )
         request = result.scalar_one_or_none()
@@ -778,7 +778,7 @@ async def mechanic_cancel_request(
         result = await session.execute(
             select(ServiceRequest).where(
                 ServiceRequest.mechanic_id == cur_mechanic.id,
-                ServiceRequest.status == Status.accepted,
+                ServiceRequest.status.in_([Status.accepted, Status.arrived])
             )
         )
         request = result.scalar_one_or_none()
@@ -834,7 +834,7 @@ async def mechanic_complete_request(
         result = await session.execute(
             select(ServiceRequest).where(
                 ServiceRequest.mechanic_id == cur_mechanic.id,
-                ServiceRequest.status == Status.accepted,
+                ServiceRequest.status == Status.arrived,
             )
         )
         request = result.scalar_one_or_none()
@@ -916,6 +916,16 @@ async def mechanic_accept_request(
         request.mechanic_id = cur_mechanic.id
         await session.commit()
         await session.refresh(request)
+
+        tracking = LocationTracking(
+            request_id = request.request_id,
+            mechanic_lat = cur_mechanic.workshop_lat,
+            mechanic_lng = cur_mechanic.workshop_lng,
+            timestamp = datetime.now(timezone.utc)
+        )
+        session.add(tracking)
+        await session.commit()
+        await session.refresh(tracking)
 
         return {"message": "the request accepted succefully"}
     except Exception as e:
