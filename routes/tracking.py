@@ -32,7 +32,7 @@ async def websocket_tracking(websocket: WebSocket, request_id: int , cur_user : 
 
     Connection Rules:
     - Only the owner of the request can connect
-    - Request must be in ACCEPTED or ON_THE_WAY status
+    - Request must be in ACCEPTED status
     - Connection automatically closes when mechanic arrives
 
     🔒 User authentication required (Bearer token in headers)
