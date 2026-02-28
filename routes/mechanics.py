@@ -292,7 +292,6 @@ async def get_mechanic_skills(
 
 
 
-
 @router.patch(
     "/mechanic/live_location/{request_id}",
     status_code=200,
@@ -399,12 +398,16 @@ async def update_mechanic_location(
         }
     )
     if arrived:
-        if request_id in manager.active_connections:
+        connections = manager.active_connections.get(request_id, [])
+        if request_id in connections:
             for connection in manager.active_connections[request_id]:
                 await connection.close()
-            del manager.active_connections[request_id]
+                
+        manager.active_connections.pop(request_id, None)
     
     return {"message": "Location updated" , "arrived" : arrived}
+
+
 
 
 

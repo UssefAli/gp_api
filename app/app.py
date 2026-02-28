@@ -12,26 +12,19 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi_users import BaseUserManager, FastAPIUsers
 import resend
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     await create_db_and_tables()
-#     yield
 
-
-# app = FastAPI(lifespan=lifespan)
 
 app = FastAPI()
 
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],  
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app = FastAPI()
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),

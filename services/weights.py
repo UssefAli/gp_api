@@ -25,7 +25,6 @@ async def update_weights(
     delta: float,
     lr: float = 0.05,
 ):
-    weights = await get_weights(session)
 
     weights = await get_weights(session)
 

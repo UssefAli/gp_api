@@ -16,14 +16,23 @@ class ConnectionManager:
 
     def disconnect(self, request_id: int, websocket: WebSocket):
         if request_id in self.active_connections:
-            self.active_connections[request_id].remove(websocket)
+            if websocket in self.active_connections.get(request_id, []):
+                self.active_connections[request_id].remove(websocket)
             if not self.active_connections[request_id]:
                 del self.active_connections[request_id]
 
     async def broadcast(self, request_id: int, data: dict):
         if request_id in self.active_connections:
+            dead_connections = []
+
             for connection in self.active_connections[request_id]:
-                await connection.send_json(data)
+                try:
+                    await connection.send_json(data)
+                except Exception:
+                    dead_connections.append(connection)
+
+            for connection in dead_connections:
+                self.disconnect(request_id, connection)
 
 
 manager = ConnectionManager()

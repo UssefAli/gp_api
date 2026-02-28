@@ -221,6 +221,7 @@ async def get_user_request_details(
             mechanic_name = mechanic.name
 
         request_details = {
+            "request id" : request.request_id,
             "mechanic id": mechanic_id,
             "mechanic name": mechanic_name,
             "status": request.status,

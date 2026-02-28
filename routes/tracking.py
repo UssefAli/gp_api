@@ -1,5 +1,7 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect , WebSocketException
 from sqlalchemy import select
 from app.db.models import ServiceRequest, User, get_async_session
 from dependencies.helper import Status
@@ -44,7 +46,7 @@ async def websocket_tracking(websocket: WebSocket, request_id: int , cur_user : 
         await websocket.close(code=1008)
         return
 
-    if request.status not in (Status.accepted):
+    if request.status != Status.accepted:
         await websocket.close(code=1008)
         return
       
@@ -52,7 +54,6 @@ async def websocket_tracking(websocket: WebSocket, request_id: int , cur_user : 
 
     try:
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            await asyncio.sleep(60)
     except WebSocketDisconnect:
         manager.disconnect(request_id, websocket)
